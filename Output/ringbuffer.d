@@ -1,0 +1,9 @@
+..\..\output\ringbuffer.o: ..\..\WIFI\ringbuffer.c
+..\..\output\ringbuffer.o: ..\..\WIFI\ringBuffer.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\stdint.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\stdio.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\stdlib.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\string.h
+..\..\output\ringbuffer.o: ..\..\WIFI\common.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\stdbool.h
+..\..\output\ringbuffer.o: D:\keil\ARM\ARMCC\Bin\..\include\ctype.h

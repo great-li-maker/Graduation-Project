@@ -1,0 +1,12 @@
+..\..\output\gizwits_protocol.o: ..\..\WIFI\gizwits_protocol.c
+..\..\output\gizwits_protocol.o: ..\..\WIFI\ringBuffer.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\stdint.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\stdio.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\stdlib.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\string.h
+..\..\output\gizwits_protocol.o: ..\..\WIFI\gizwits_product.h
+..\..\output\gizwits_protocol.o: ..\..\WIFI\gizwits_protocol.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\stdbool.h
+..\..\output\gizwits_protocol.o: ..\..\WIFI\common.h
+..\..\output\gizwits_protocol.o: D:\keil\ARM\ARMCC\Bin\..\include\ctype.h
+..\..\output\gizwits_protocol.o: ..\..\WIFI\dataPointTools.h
