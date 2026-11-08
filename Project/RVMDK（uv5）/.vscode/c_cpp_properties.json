@@ -100,21 +100,21 @@
         {
             "name": "PROJECT",
             "includePath": [
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Libraries\\CMSIS",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\User",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Libraries\\FWlib\\inc",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\APP",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\BSP",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Main",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Wifi",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Onenet",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Libraries\\CMSIS",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\User",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Libraries\\FWlib\\inc",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\APP",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\BSP",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Main",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Wifi",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Onenet",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include\\arm_linux",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include\\arm_linux_compat",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Libraries\\CMSIS\\startup",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Libraries\\FWlib\\src",
-                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\stm32的智能孵化箱环境监测与控制系统设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\Doc"
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Libraries\\CMSIS\\startup",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Libraries\\FWlib\\src",
+                "c:\\Users\\lyx\\Desktop\\毕业论文+设计\\基于stm32的智能孵化箱环境监测与控制系统设计\\软件\\Doc"
             ],
             "defines": [
                 "STM32F10X_MD",

@@ -18,7 +18,7 @@ void PWM_Init(void)
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(PWM_GPIO_PORT, &GPIO_InitStruct);
 
-    // 时基: ARR=99  PSC=72  档位0~99 对应亮度0~100%
+    // 时基: ARR=99  PSC=72  档位0~99 对应占空比0~100%
     TIM_TimeBaseStruct.TIM_Period = 99;
     TIM_TimeBaseStruct.TIM_Prescaler = 72;
     TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -35,10 +35,10 @@ void PWM_Init(void)
 }
 
 /**
- * @brief  设置LED亮度 范围 0~100
- * @param  level: 亮度值 0(灭) ~ 100(最亮)
+ * @brief  设置风扇档位 范围 0~100
+ * @param  level: 档位值 0(停) ~ 100(最大)
  */
-void PWM_SetBright(u8 level)
+void PWM_SetSpeed(u8 level)
 {
     u16 duty;
     // 边界限制

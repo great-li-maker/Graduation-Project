@@ -50,9 +50,21 @@
 //设备名称
 #define DEVID		"test1"
 
-extern unsigned char esp8266_buf[512];
+/* 属性设置回复主题：平台下发 property/set 后，设备必须往 set_reply 回一条确认，
+   否则 set-device-property 接口会报 10411“设备响应超时” */
+#define SET_TOPIC			"$sys/" PROID "/" DEVID "/thing/property/set"
+#define SET_REPLY_TOPIC		"$sys/" PROID "/" DEVID "/thing/property/set_reply"
+
 extern uint8_t Alarm_flag;
 extern uint8_t pwm_duty;
+extern uint8_t Temp_Thr;       //温度阈值（主程序里定义）
+extern uint8_t Hum_Thr;        //湿度阈值（主程序里定义）
+extern uint8_t Work_Mode;      //工作模式：0-自动  1-手动（主程序里定义）
+extern uint8_t Heater_flag;    //加热器手动开关标志（主程序里定义）
+extern uint8_t Humidifier_flag;    //加湿器手动开关标志（主程序里定义）
+extern uint8_t Heater_On;      //加热器继电器状态（主程序里定义）
+extern uint8_t Hum_On;         //加湿器继电器状态（主程序里定义）
+
 
 //==========================================================
 //	函数名称：	OneNet_DevLink
@@ -71,7 +83,6 @@ _Bool OneNet_DevLink(void)
 	MQTT_PACKET_STRUCTURE mqttPacket = {NULL, 0, 0, 0};					//协议包
 
 	unsigned char *dataPtr;
-	int i = 0;
 	_Bool status = 1;
 	
 	UsartPrintf(USART_DEBUG, "OneNet_DevLink\r\n"
@@ -135,9 +146,16 @@ void OneNet_Subscribe(const char *topics[], unsigned char topic_cnt)
 	
 	if(MQTT_PacketSubscribe(MQTT_SUBSCRIBE_ID, MQTT_QOS_LEVEL0, topics, topic_cnt, &mqttPacket) == 0)
 	{
-		ESP8266_SendData(mqttPacket._data, mqttPacket._len);					//向平台发送订阅请求
-		
+		unsigned char *subPtr = NULL;
+
+		ESP8266_SendData(mqttPacket._data, mqttPacket._len);
+
 		MQTT_DeleteBuffer(&mqttPacket);											//删包
+
+		/* 等 SUBACK：拿到了说明订阅成功，之后才能收到属性下发 */
+		subPtr = ESP8266_GetIPD(100);
+		if(subPtr != NULL)
+			OneNet_RevPro(subPtr);
 	}
 
 }
@@ -167,111 +185,302 @@ void OneNet_Publish(const char *topic, const char *msg)
 		
 		MQTT_DeleteBuffer(&mqttPacket);											//删包
 	}
+	else
+	{
+		UsartPrintf(USART_DEBUG, "WARN:	MQTT_PacketPublish Failed\r\n");
+	}
 
+}
+
+//==========================================================
+//	函数名称：	OneNet_GetValue
+//
+//	函数功能：	取出属性真正的“值”节点
+//
+//	入口参数：	item：属性节点
+//
+//	返回参数：	值节点（bool / number / string），无则返回 NULL
+//
+//	说明：		OneNET 下发有两种写法，都要兼容：
+//				扁平：  "Fan": 30
+//				嵌套：  "Fan": {"value": 30, "time": 123456}
+//==========================================================
+static cJSON *OneNet_GetValue(cJSON *item)
+{
+	cJSON *v = NULL;
+
+	if(item == NULL) return NULL;
+
+	v = cJSON_GetObjectItem(item, "value");		//嵌套格式：取 value
+	return (v != NULL) ? v : item;				//扁平格式：节点本身就是值
+}
+
+//==========================================================
+//	函数名称：	OneNet_GetBool
+//
+//	函数功能：	把属性节点转成布尔值
+//
+//	入口参数：	item：属性节点
+//
+//	返回参数：	0/1-成功  -1-类型不支持
+//
+//	说明：		兼容 true/false、0/1 以及 "true"/"false"/"1"/"0"
+//==========================================================
+static int OneNet_GetBool(cJSON *item)
+{
+	cJSON *v = OneNet_GetValue(item);
+
+	if(v == NULL)
+		return -1;
+
+	if(v->type == cJSON_True)
+		return 1;
+
+	if(v->type == cJSON_False)
+		return 0;
+
+	if(v->type == cJSON_Number)
+		return (v->valuedouble != 0) ? 1 : 0;
+
+	if(v->type == cJSON_String && v->valuestring != NULL)
+	{
+		if(strcmp(v->valuestring, "true") == 0 || strcmp(v->valuestring, "1") == 0)
+			return 1;
+
+		if(strcmp(v->valuestring, "false") == 0 || strcmp(v->valuestring, "0") == 0)
+			return 0;
+	}
+
+	return -1;
+}
+
+//==========================================================
+//	函数名称：	OneNet_GetNumber
+//
+//	函数功能：	把属性节点转成数值，并限制在给定范围内
+//
+//	入口参数：	item：属性节点
+//				min/max：允许范围
+//				out：解析结果
+//
+//	返回参数：	0-成功  -1-类型不支持
+//==========================================================
+static int OneNet_GetNumber(cJSON *item, double min, double max, double *out)
+{
+	cJSON *v = OneNet_GetValue(item);
+
+	if(v == NULL || v->type != cJSON_Number)
+		return -1;
+
+	*out = v->valuedouble;
+
+	if(*out < min) *out = min;
+	if(*out > max) *out = max;
+
+	return 0;
 }
 
 //==========================================================
 //	函数名称：	OneNet_RevPro
 //
-//	函数功能：	平台返回数据检测
+//	函数功能：	平台下发数据解析
 //
 //	入口参数：	dataPtr：平台返回的数据
 //
 //	返回参数：	无
 //
-//	说明：		
+//	说明：
 //==========================================================
 void OneNet_RevPro(unsigned char *cmd)
 {
-	
+
 	MQTT_PACKET_STRUCTURE mqttPacket = {NULL, 0, 0, 0};								//协议包
-	
+
 	char *req_payload = NULL;
 	char *cmdid_topic = NULL;
-	
+
 	unsigned short topic_len = 0;
 	unsigned short req_len = 0;
-	
+
 	unsigned char type = 0;
 	unsigned char qos = 0;
 	static unsigned short pkt_id = 0;
-	
+
 	short result = 0;
-	cJSON *json, *params_json, *led_json,*Alarm_json,*Temp_json;
-	char *dataPtr = NULL;
-	char numBuf[10];
-	int num = 0;
-	
+	cJSON *json = NULL, *params_json = NULL, *id_json = NULL;
+	cJSON *fan_json = NULL, *Mode_json = NULL, *Alarm_json = NULL;
+	cJSON *Heater_json = NULL, *Humidifier_json = NULL;
+	cJSON *Tempth_json = NULL, *Humth_json = NULL;
+	int bval = 0;
+	double dval = 0.0;
+	char idBuf[40];
+	char replyBuf[96];
+
 	type = MQTT_UnPacketRecv(cmd);
 	switch(type)
 	{
 		case MQTT_PKT_CMD:															//命令下发
-			
+
 			result = MQTT_UnPacketCmd(cmd, &cmdid_topic, &req_payload, &req_len);	//解出topic和消息体
 			if(result == 0)
 			{
 				UsartPrintf(USART_DEBUG, "cmdid: %s, req: %s, req_len: %d\r\n", cmdid_topic, req_payload, req_len);
-				
+
 				if(MQTT_PacketCmdResp(cmdid_topic, req_payload, &mqttPacket) == 0)	//命令回复组包
 				{
 					UsartPrintf(USART_DEBUG, "Tips:	Send CmdResp\r\n");
-					
+
 					ESP8266_SendData(mqttPacket._data, mqttPacket._len);			//回复命令
 					MQTT_DeleteBuffer(&mqttPacket);									//删包
 				}
 			}
-		
+
 		break;
-			
+
 		case MQTT_PKT_PUBLISH:														//接收的Publish消息
-		
+
 			result = MQTT_UnPacketPublish(cmd, &cmdid_topic, &topic_len, &req_payload, &req_len, &qos, &pkt_id);
 			if(result == 0)
 			{
 				UsartPrintf(USART_DEBUG, "topic: %s, topic_len: %d, payload: %s, payload_len: %d\r\n",
 																	cmdid_topic, topic_len, req_payload, req_len);
-				
-				// 对数据包req_payload进行JSON格式解析
-				json = cJSON_Parse(req_payload);
-				params_json = cJSON_GetObjectItem(json,"params");
-				led_json = cJSON_GetObjectItem(params_json,"LED");
-				Alarm_json = cJSON_GetObjectItem(params_json,"Alarm");
-				Temp_json = cJSON_GetObjectItem(params_json,"Temp");   //扩展温度。使用需完善
-	
-				if(led_json != NULL && led_json->type == cJSON_Number)
+
+				/* 只处理属性设置主题，避免把平台其它消息当成属性解析 */
+				if(strcmp((char *)cmdid_topic, SET_TOPIC) == 0)
 				{
-					pwm_duty = (uint8_t)led_json->valuedouble;
-					if(pwm_duty > 100) pwm_duty = 100;
-					UsartPrintf(USART_DEBUG, "LED Bright: %d\r\n", pwm_duty);
-					PWM_SetBright(pwm_duty);  // 调用PWM设置亮度
+					json = cJSON_Parse(req_payload);
+
+					if(json == NULL)
+					{
+						UsartPrintf(USART_DEBUG, "WARN:\tJSON parse failed\r\n");
+					}
+					else
+					{
+						id_json = cJSON_GetObjectItem(json, "id");
+						params_json = cJSON_GetObjectItem(json, "params");
+
+						if(params_json != NULL)
+						{
+							fan_json = cJSON_GetObjectItem(params_json, "Fan");
+							Mode_json = cJSON_GetObjectItem(params_json, "Mode");
+							Alarm_json = cJSON_GetObjectItem(params_json, "Alarm");
+							Heater_json = cJSON_GetObjectItem(params_json, "Heater");
+							Humidifier_json = cJSON_GetObjectItem(params_json, "Humidifier");
+							Tempth_json = cJSON_GetObjectItem(params_json, "Temp_th");
+							Humth_json = cJSON_GetObjectItem(params_json, "Hum_th");
+
+							/* 工作模式：单独下发也能生效 */
+							bval = OneNet_GetBool(Mode_json);
+							if(bval >= 0)
+							{
+								Work_Mode = (uint8_t)bval;
+
+								if(Work_Mode == 1)
+								{
+									Alarm_flag = 0;			//手动模式关闭报警
+								}
+								else
+								{
+									Alarm_flag = 1;			//自动模式允许报警
+									Heater_flag = 0;		//清掉手动强制标志
+									Humidifier_flag = 0;
+								}
+
+								UsartPrintf(USART_DEBUG, "Work Mode: %s\r\n", Work_Mode ? "Manual" : "Automatic");
+							}
+
+							/* 报警使能：单独下发也能生效 */
+							bval = OneNet_GetBool(Alarm_json);
+							if(bval >= 0)
+							{
+								Alarm_flag = (uint8_t)bval;
+								UsartPrintf(USART_DEBUG, "Alarm Flag: %d\r\n", Alarm_flag);
+							}
+
+							/* 加热器：单独下发也能生效 */
+							bval = OneNet_GetBool(Heater_json);
+							if(bval >= 0)
+							{
+								Heater_flag = (uint8_t)bval;
+
+								if(bval == 0)
+									Heater_On = 0;		//手动模式下要能真正关断
+
+								UsartPrintf(USART_DEBUG, "Heater Flag: %d\r\n", Heater_flag);
+							}
+
+							/* 加湿器：单独下发也能生效 */
+							bval = OneNet_GetBool(Humidifier_json);
+							if(bval >= 0)
+							{
+								Humidifier_flag = (uint8_t)bval;
+
+								if(bval == 0)
+									Hum_On = 0;
+
+								UsartPrintf(USART_DEBUG, "Humidifier Flag: %d\r\n", Humidifier_flag);
+							}
+
+							/* 风扇档位 0~100 */
+							if(OneNet_GetNumber(fan_json, 0.0, 100.0, &dval) == 0)
+							{
+								pwm_duty = (uint8_t)(dval + 0.5);
+								PWM_SetSpeed(pwm_duty);
+								UsartPrintf(USART_DEBUG, "Fan Speed: %d\r\n", pwm_duty);
+							}
+
+							/* 温度阈值 0~100 */
+							if(OneNet_GetNumber(Tempth_json, 0.0, 100.0, &dval) == 0)
+							{
+								Temp_Thr = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Temperature Threshold: %d\r\n", Temp_Thr);
+							}
+
+							/* 湿度阈值 0~100 */
+							if(OneNet_GetNumber(Humth_json, 0.0, 100.0, &dval) == 0)
+							{
+								Hum_Thr = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Humidity Threshold: %d\r\n", Hum_Thr);
+							}
+						}
+						else
+						{
+							UsartPrintf(USART_DEBUG, "WARN:\tno params\r\n");
+						}
+
+						/* 无论参数是否合法都要回 set_reply，否则平台 set-device-property 报 10411 */
+						idBuf[0] = '\0';
+						if(id_json != NULL)
+						{
+							if(id_json->type == cJSON_String && id_json->valuestring != NULL)
+							{
+								strncpy(idBuf, id_json->valuestring, sizeof(idBuf) - 1);
+								idBuf[sizeof(idBuf) - 1] = '\0';
+							}
+							else if(id_json->type == cJSON_Number)
+							{
+								sprintf(idBuf, "%d", (int)id_json->valuedouble);
+							}
+						}
+
+						sprintf(replyBuf, "{\"id\":\"%s\",\"code\":200,\"msg\":\"success\"}", idBuf);
+						OneNet_Publish(SET_REPLY_TOPIC, replyBuf);
+
+						cJSON_Delete(json);
+					}
 				}
-				
-				if(Alarm_json != NULL)
-				{
-					if(Alarm_json->type == cJSON_True) 
-					{
-							Alarm_flag = 1;
-							UsartPrintf(USART_DEBUG, "Alarm_flag = 1\r\n");									
-					}
-					else 
-					{
-							Alarm_flag = 0;
-							UsartPrintf(USART_DEBUG, "Alarm_flag = 0\r\n");					
-					}
-				}	
-				cJSON_Delete(json);
 			}
 		break;
-			
+
 		case MQTT_PKT_PUBACK:														//发送Publish消息，平台回复的Ack
-		
+
 			if(MQTT_UnPacketPublishAck(cmd) == 0)
 				UsartPrintf(USART_DEBUG, "Tips:	MQTT Publish Send OK\r\n");
-			
+
 		break;
-			
-		case MQTT_PKT_PUBREC:														//发送Publish消息，平台回复的Rec，设备需回复Rel消息
-		
+
+		case MQTT_PKT_PUBREC:														//发送Publish消息，平台回复的Rec，设备回复Rel消息
+
 			if(MQTT_UnPacketPublishRec(cmd) == 0)
 			{
 				UsartPrintf(USART_DEBUG, "Tips:	Rev PublishRec\r\n");
@@ -282,11 +491,11 @@ void OneNet_RevPro(unsigned char *cmd)
 					MQTT_DeleteBuffer(&mqttPacket);
 				}
 			}
-		
+
 		break;
-			
-		case MQTT_PKT_PUBREL:														//收到Publish消息，设备回复Rec后，平台回复的Rel，设备需再回复Comp
-			
+
+		case MQTT_PKT_PUBREL:														//收到Publish消息，设备回复Rec，平台回复Rel，设备再回复Comp
+
 			if(MQTT_UnPacketPublishRel(cmd, pkt_id) == 0)
 			{
 				UsartPrintf(USART_DEBUG, "Tips:	Rev PublishRel\r\n");
@@ -297,46 +506,46 @@ void OneNet_RevPro(unsigned char *cmd)
 					MQTT_DeleteBuffer(&mqttPacket);
 				}
 			}
-		
+
 		break;
-		
-		case MQTT_PKT_PUBCOMP:													//发送Publish消息，平台返回Rec，设备回复Rel，平台再返回的Comp
-		
+
+		case MQTT_PKT_PUBCOMP:													//发送Publish消息，平台回复Rec，设备回复Rel，平台再回复Comp
+
 			if(MQTT_UnPacketPublishComp(cmd) == 0)
 			{
 				UsartPrintf(USART_DEBUG, "Tips:	Rev PublishComp\r\n");
 			}
-		
+
 		break;
-			
+
 		case MQTT_PKT_SUBACK:														//发送Subscribe消息的Ack
-		
+
 			if(MQTT_UnPacketSubscribe(cmd) == 0)
 				UsartPrintf(USART_DEBUG, "Tips:	MQTT Subscribe OK\r\n");
 			else
 				UsartPrintf(USART_DEBUG, "Tips:	MQTT Subscribe Err\r\n");
-		
+
 		break;
-			
+
 		case MQTT_PKT_UNSUBACK:													//发送UnSubscribe消息的Ack
-		
+
 			if(MQTT_UnPacketUnSubscribe(cmd) == 0)
 				UsartPrintf(USART_DEBUG, "Tips:	MQTT UnSubscribe OK\r\n");
 			else
 				UsartPrintf(USART_DEBUG, "Tips:	MQTT UnSubscribe Err\r\n");
-		
+
 		break;
-		
+
 		default:
 			result = -1;
 		break;
 	}
-	
+
 	ESP8266_Clear();									//清空缓存
-	
+
 	if(result == -1)
 		return;
-	
+
 	if(type == MQTT_PKT_CMD || type == MQTT_PKT_PUBLISH)
 	{
 		MQTT_FreeBuffer(cmdid_topic);

@@ -9,6 +9,6 @@
 #define PWM_GPIO_PIN   GPIO_Pin_9
 
 void PWM_Init(void);
-void PWM_SetBright(u8 level);
+void PWM_SetSpeed(u8 level);
 
 #endif

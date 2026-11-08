@@ -14,7 +14,7 @@ u8 OLED_GRAM[144][8];
 */
 unsigned int Oledfont_NUM(void)
 {
-  unsigned int HZ_NUM;
+  unsigned int HZ_NUM = 0;
   unsigned char *PT;
   PT = hz_index;
   while(*PT++ != '\0')

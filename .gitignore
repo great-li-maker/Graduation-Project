@@ -1,0 +1,15 @@
+# Keil MDK 编译产物
+Output/
+Listing/
+*.uvguix.*
+*.uvoptx
+*.bak
+*.Bak
+*.dep
+*.iex
+*.lnp
+*.scvd
+
+# 编辑器 / 日志
+*.log
+*.lock

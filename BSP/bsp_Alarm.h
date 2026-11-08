@@ -13,7 +13,7 @@
 
 
 void Alarm_Init(void);//·äÃùÆ÷³õÊ¼»¯º¯Êı
-void Alarm_OFF();
-void Alarm_ON();
+void Alarm_OFF(void);
+void Alarm_ON(void);
 
 #endif

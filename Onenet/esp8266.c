@@ -132,6 +132,10 @@ void ESP8266_SendData(unsigned char *data, unsigned short len)
 	{
 		Usart_SendString(USART2, data, len);		//发送设备连接请求数据
 	}
+	else
+	{
+		UsartPrintf(USART_DEBUG, "[ESP] CIPSEND fail, no '>'\r\n");
+	}
 
 }
 
