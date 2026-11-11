@@ -23,7 +23,7 @@ uint16_t TimeCount = 0;
 
 uint8_t Temp_Thr = 30;  //温度阈值设置
 uint8_t Hum_Thr = 80;   //湿度阈值设置
-uint8_t Alarm_flag;
+uint8_t Alarm_flag = 1;   //报警使能：上电默认开启
 uint8_t Humidifier_flag;
 uint8_t Heater_flag;
 int16_t pwm_duty;
@@ -194,7 +194,7 @@ void Oled_Switch()
 		OLED_Clear();
 	}
 
-	key_value = Key_Scan(1);  
+	key_value = Key_Scan(0);  
 
 	/* 自动模式：板子上的按键只能翻页，KEY2/KEY3 一律不响应 */
 	if(Work_Mode == 0 && key_value != 1) key_value = 0;
@@ -305,7 +305,7 @@ void JsonValue()
 			Temp_Thr, Hum_Thr,
 			Heater_On ? "true" : "false",
 			Hum_On ? "true" : "false",
-			Alarm_On ? "true" : "false",
+			Alarm_flag ? "true" : "false",
 			Work_Mode ? "true" : "false",
 			pwm_duty);
 }
@@ -343,16 +343,16 @@ int main()
 		Heater_Control();
 		Humidifier_Control();
 
+		/* 先处理下行，避免周期上报清空接收缓存时漏掉 set */
+		dataPtr = ESP8266_GetIPD(2);
+		if(dataPtr != NULL)
+			OneNet_RevPro(dataPtr);
+
 		if(++TimeCount >= 100)
 		{
 			JsonValue();
 			OneNet_Publish(devPubTopic, PUBLIS_BUF);
-			ESP8266_Clear();
 			TimeCount = 0;
 		}
-
-		dataPtr = ESP8266_GetIPD(2);
-		if(dataPtr != NULL)
-			OneNet_RevPro(dataPtr);
 	}
 }

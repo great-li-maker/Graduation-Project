@@ -125,18 +125,24 @@ void ESP8266_SendData(unsigned char *data, unsigned short len)
 {
 
 	char cmdBuf[32];
-	
-	ESP8266_Clear();								//清空接收缓存
-	sprintf(cmdBuf, "AT+CIPSEND=%d\r\n", len);		//发送命令
-	if(!ESP8266_SendCmd(cmdBuf, ">"))				//收到‘>’时可以发送数据
+	unsigned char retry;
+
+	/* 模块偶尔处于 busy 状态，第一次拿不到 '>' 时重试，避免丢掉 set_reply */
+	for(retry = 0; retry < 3; retry++)
 	{
-		Usart_SendString(USART2, data, len);		//发送设备连接请求数据
-	}
-	else
-	{
-		UsartPrintf(USART_DEBUG, "[ESP] CIPSEND fail, no '>'\r\n");
+		ESP8266_Clear();								//清空接收缓存
+		sprintf(cmdBuf, "AT+CIPSEND=%d\r\n", len);		//发送命令
+		if(!ESP8266_SendCmd(cmdBuf, ">"))				//收到‘>’时可以发送数据
+		{
+			Usart_SendString(USART2, data, len);		//发送设备连接请求数据
+			return;
+		}
+
+		UsartPrintf(USART_DEBUG, "[ESP] CIPSEND fail, retry %d\r\n", retry + 1);
+		DelayXms(100);
 	}
 
+	UsartPrintf(USART_DEBUG, "[ESP] CIPSEND give up\r\n");
 }
 
 //==========================================================
@@ -155,36 +161,40 @@ unsigned char *ESP8266_GetIPD(unsigned short timeOut)
 {
 
 	char *ptrIPD = NULL;
-	
+	char *p = NULL;
+	unsigned short len = 0;
+
 	do
 	{
-		if(ESP8266_WaitRecive() == REV_OK)								//如果接收完成
-		{	
-			ptrIPD = strstr((char *)esp8266_buf, "IPD,");				//搜索“IPD”头
-			if(ptrIPD == NULL)											//如果没找到，可能是IPD头的延迟，还是需要等待一会，但不会超过设定的时间
+		if(esp8266_cnt > 0)
+		{
+			ptrIPD = strstr((char *)esp8266_buf, "IPD,");
+			if(ptrIPD != NULL)
 			{
-				UsartPrintf(USART_DEBUG, "\"IPD\" not found\r\n");
-			}
-			else
-			{
-				ptrIPD = strchr(ptrIPD, ':');							//找到':'
-				if(ptrIPD != NULL)
+				p = ptrIPD + 4;
+				len = 0;
+				while(*p >= '0' && *p <= '9')
 				{
-					ptrIPD++;
-					return (unsigned char *)(ptrIPD);
+					len = (unsigned short)(len * 10 + (*p - '0'));
+					p++;
 				}
-				else
-					return NULL;
-				
+
+				if(*p == ':')
+				{
+					if((unsigned short)(p + 1 - (char *)esp8266_buf) + len <= esp8266_cnt)
+						return (unsigned char *)(p + 1);
+				}
 			}
 		}
-		
-		DelayXms(5);   
-        timeOut--;		//延时等待
-	} while(timeOut>0);
-	
-	return NULL;														//超时还未找到，返回空指针
 
+		DelayXms(5);
+		timeOut--;
+	} while(timeOut > 0);
+
+	if(esp8266_cnt > 0 && strstr((char *)esp8266_buf, "IPD,") == NULL)
+		ESP8266_Clear();
+
+	return NULL;
 }
 
 //==========================================================

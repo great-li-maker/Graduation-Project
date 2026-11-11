@@ -311,6 +311,7 @@ void OneNet_RevPro(unsigned char *cmd)
 	cJSON *fan_json = NULL, *Mode_json = NULL, *Alarm_json = NULL;
 	cJSON *Heater_json = NULL, *Humidifier_json = NULL;
 	cJSON *Tempth_json = NULL, *Humth_json = NULL;
+	cJSON *Temp_json = NULL, *Hum_json = NULL;
 	int bval = 0;
 	double dval = 0.0;
 	char idBuf[40];
@@ -368,6 +369,8 @@ void OneNet_RevPro(unsigned char *cmd)
 							Humidifier_json = cJSON_GetObjectItem(params_json, "Humidifier");
 							Tempth_json = cJSON_GetObjectItem(params_json, "Temp_th");
 							Humth_json = cJSON_GetObjectItem(params_json, "Hum_th");
+							Temp_json = cJSON_GetObjectItem(params_json, "Temp");
+							Hum_json = cJSON_GetObjectItem(params_json, "Hum");
 
 							/* 工作模式：单独下发也能生效 */
 							bval = OneNet_GetBool(Mode_json);
@@ -375,19 +378,22 @@ void OneNet_RevPro(unsigned char *cmd)
 							{
 								Work_Mode = (uint8_t)bval;
 
-								if(Work_Mode == 1)
+								if(Work_Mode == 0)
 								{
-									Alarm_flag = 0;			//手动模式关闭报警
-								}
-								else
-								{
-									Alarm_flag = 1;			//自动模式允许报警
 									Heater_flag = 0;		//清掉手动强制标志
 									Humidifier_flag = 0;
 								}
+								//Alarm 由云端单独控制，模式切换不修改 Alarm_flag
 
 								UsartPrintf(USART_DEBUG, "Work Mode: %s\r\n", Work_Mode ? "Manual" : "Automatic");
 							}
+
+							/* Temp/Hum 是测量值：云端即使下发也不修改传感器数据，仅记录并回复成功 */
+							if(OneNet_GetNumber(Temp_json, 0.0, 100.0, &dval) == 0)
+								UsartPrintf(USART_DEBUG, "WARN:\tTemp is measured, ignore set: %d\r\n", (int)(dval + 0.5));
+
+							if(OneNet_GetNumber(Hum_json, 0.0, 100.0, &dval) == 0)
+								UsartPrintf(USART_DEBUG, "WARN:\tHum is measured, ignore set: %d\r\n", (int)(dval + 0.5));
 
 							/* 报警使能：单独下发也能生效 */
 							bval = OneNet_GetBool(Alarm_json);
@@ -469,6 +475,10 @@ void OneNet_RevPro(unsigned char *cmd)
 						cJSON_Delete(json);
 					}
 				}
+			}
+			else
+			{
+				UsartPrintf(USART_DEBUG, "WARN:\tUnPacketPublish failed: %d\r\n", result);
 			}
 		break;
 
