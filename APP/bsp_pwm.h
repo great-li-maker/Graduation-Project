@@ -11,4 +11,12 @@
 void PWM_Init(void);
 void PWM_SetSpeed(u8 level);
 
+/* 风扇三挡：关 / 低 / 中 / 高 */
+#define FAN_LEVEL_OFF    0
+#define FAN_LEVEL_LOW    30
+#define FAN_LEVEL_MID    60
+#define FAN_LEVEL_HIGH   100
+
+uint8_t PWM_SnapFanLevel(uint8_t duty);
+
 #endif

@@ -56,9 +56,11 @@
 #define SET_REPLY_TOPIC		"$sys/" PROID "/" DEVID "/thing/property/set_reply"
 
 extern uint8_t Alarm_flag;
-extern uint8_t pwm_duty;
-extern uint8_t Temp_Thr;       //温度阈值（主程序里定义）
-extern uint8_t Hum_Thr;        //湿度阈值（主程序里定义）
+extern uint8_t fan_base;
+extern uint8_t Temp_Low;       //温度下限（主程序里定义）
+extern uint8_t Temp_High;      //温度上限（主程序里定义）
+extern uint8_t Hum_Low;        //湿度下限（主程序里定义）
+extern uint8_t Hum_High;       //湿度上限（主程序里定义）
 extern uint8_t Work_Mode;      //工作模式：0-自动  1-手动（主程序里定义）
 extern uint8_t Heater_flag;    //加热器手动开关标志（主程序里定义）
 extern uint8_t Humidifier_flag;    //加湿器手动开关标志（主程序里定义）
@@ -310,10 +312,12 @@ void OneNet_RevPro(unsigned char *cmd)
 	cJSON *json = NULL, *params_json = NULL, *id_json = NULL;
 	cJSON *fan_json = NULL, *Mode_json = NULL, *Alarm_json = NULL;
 	cJSON *Heater_json = NULL, *Humidifier_json = NULL;
-	cJSON *Tempth_json = NULL, *Humth_json = NULL;
+	cJSON *TempLow_json = NULL, *TempHigh_json = NULL;
+	cJSON *HumLow_json = NULL, *HumHigh_json = NULL;
 	cJSON *Temp_json = NULL, *Hum_json = NULL;
 	int bval = 0;
 	double dval = 0.0;
+	uint8_t tmp8 = 0;
 	char idBuf[40];
 	char replyBuf[96];
 
@@ -367,8 +371,10 @@ void OneNet_RevPro(unsigned char *cmd)
 							Alarm_json = cJSON_GetObjectItem(params_json, "Alarm");
 							Heater_json = cJSON_GetObjectItem(params_json, "Heater");
 							Humidifier_json = cJSON_GetObjectItem(params_json, "Humidifier");
-							Tempth_json = cJSON_GetObjectItem(params_json, "Temp_th");
-							Humth_json = cJSON_GetObjectItem(params_json, "Hum_th");
+							TempLow_json = cJSON_GetObjectItem(params_json, "Temp_low");
+							TempHigh_json = cJSON_GetObjectItem(params_json, "Temp_high");
+							HumLow_json = cJSON_GetObjectItem(params_json, "Hum_low");
+							HumHigh_json = cJSON_GetObjectItem(params_json, "Hum_high");
 							Temp_json = cJSON_GetObjectItem(params_json, "Temp");
 							Hum_json = cJSON_GetObjectItem(params_json, "Hum");
 
@@ -430,24 +436,53 @@ void OneNet_RevPro(unsigned char *cmd)
 							/* 风扇档位 0~100 */
 							if(OneNet_GetNumber(fan_json, 0.0, 100.0, &dval) == 0)
 							{
-								pwm_duty = (uint8_t)(dval + 0.5);
-								PWM_SetSpeed(pwm_duty);
-								UsartPrintf(USART_DEBUG, "Fan Speed: %d\r\n", pwm_duty);
+								/* 归到三挡，写入用户设定；实际输出由 Fan_Control() 决定 */
+								fan_base = PWM_SnapFanLevel((uint8_t)(dval + 0.5));
+								UsartPrintf(USART_DEBUG, "Fan Speed: %d\r\n", fan_base);
 							}
 
-							/* 温度阈值 0~100 */
-							if(OneNet_GetNumber(Tempth_json, 0.0, 100.0, &dval) == 0)
+														/* 温度下限 0~100 */
+							if(OneNet_GetNumber(TempLow_json, 0.0, 100.0, &dval) == 0)
 							{
-								Temp_Thr = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Temperature Threshold: %d\r\n", Temp_Thr);
+								Temp_Low = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Temp Low: %d\r\n", Temp_Low);
 							}
 
-							/* 湿度阈值 0~100 */
-							if(OneNet_GetNumber(Humth_json, 0.0, 100.0, &dval) == 0)
+							/* 温度上限 0~100 */
+							if(OneNet_GetNumber(TempHigh_json, 0.0, 100.0, &dval) == 0)
 							{
-								Hum_Thr = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Humidity Threshold: %d\r\n", Hum_Thr);
+								Temp_High = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Temp High: %d\r\n", Temp_High);
 							}
+
+							/* 湿度下限 0~100 */
+							if(OneNet_GetNumber(HumLow_json, 0.0, 100.0, &dval) == 0)
+							{
+								Hum_Low = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Hum Low: %d\r\n", Hum_Low);
+							}
+
+							/* 湿度上限 0~100 */
+							if(OneNet_GetNumber(HumHigh_json, 0.0, 100.0, &dval) == 0)
+							{
+								Hum_High = (uint8_t)(dval + 0.5);
+								UsartPrintf(USART_DEBUG, "Hum High: %d\r\n", Hum_High);
+							}
+
+							/* 保证下限不高于上限 */
+							if(Temp_Low > Temp_High)
+							{
+								tmp8 = Temp_Low;
+								Temp_Low = Temp_High;
+								Temp_High = tmp8;
+							}
+							if(Hum_Low > Hum_High)
+							{
+								tmp8 = Hum_Low;
+								Hum_Low = Hum_High;
+								Hum_High = tmp8;
+							}
+
 						}
 						else
 						{

@@ -49,3 +49,22 @@ void PWM_SetSpeed(u8 level)
 }
 
 
+
+/**
+ * @brief  把 0~100 的任意值归到三挡
+ * @param  duty: 0~100
+ * @retval 0 / 30 / 60 / 100
+ */
+uint8_t PWM_SnapFanLevel(uint8_t duty)
+{
+    if(duty == 0)
+        return FAN_LEVEL_OFF;
+
+    if(duty < (FAN_LEVEL_LOW + FAN_LEVEL_MID) / 2)
+        return FAN_LEVEL_LOW;
+
+    if(duty < (FAN_LEVEL_MID + FAN_LEVEL_HIGH) / 2)
+        return FAN_LEVEL_MID;
+
+    return FAN_LEVEL_HIGH;
+}
