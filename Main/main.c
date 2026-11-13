@@ -20,17 +20,17 @@ char oled_Hum[16];
 uint8_t key_value = 0;
 uint16_t TimeCount = 0;
 
-uint8_t Temp_Low = 30;   //ï¿½Â¶ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-uint8_t Temp_High = 33;  //ï¿½Â¶ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¢ï¿½ï¿½
-uint8_t Hum_Low = 80;    //Êªï¿½ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êª
-uint8_t Hum_High = 85;   //Êªï¿½ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¢ï¿½ï¿½
-uint8_t Alarm_flag = 1;   //ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ü£ï¿½ï¿½Ïµï¿½Ä¬ï¿½Ï¿ï¿½ï¿½ï¿½
+uint8_t Temp_Low = 30;   //ÎÂ¶ÈÏÂÏÞ£ºµÍÓÚËüÆô¶¯¼ÓÈÈ
+uint8_t Temp_High = 33;  //ÎÂ¶ÈÉÏÏÞ£º¸ßÓÚËüÆô¶¯É¢ÈÈ
+uint8_t Hum_Low = 80;    //Êª¶ÈÏÂÏÞ£ºµÍÓÚËüÆô¶¯¼ÓÊª
+uint8_t Hum_High = 85;   //Êª¶ÈÉÏÏÞ£º¸ßÓÚËüÆô¶¯É¢ÈÈ
+uint8_t Alarm_flag = 1;   //±¨¾¯Ê¹ÄÜ£ºÉÏµçÄ¬ÈÏ¿ªÆô
 uint8_t Humidifier_flag;
 uint8_t Heater_flag;
 int16_t pwm_duty;
-uint8_t fan_base = FAN_LEVEL_OFF;   //ï¿½Ã»ï¿½ï¿½è¶¨ï¿½Ä·ï¿½ï¿½Èµï¿½Î»
+uint8_t fan_base = FAN_LEVEL_OFF;   //ÓÃ»§Éè¶¨µÄ·çÉÈµ²Î»
 
-// ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½0-ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½Ïµï¿½Ä¬ï¿½Ï£ï¿½  1-ï¿½Ö¶ï¿½Ä£Ê½
+// ¹¤×÷Ä£Ê½£º0-×Ô¶¯Ä£Ê½£¨ÉÏµçÄ¬ÈÏ£©  1-ÊÖ¶¯Ä£Ê½
 uint8_t Work_Mode = 0;
 
 char PUBLIS_BUF[400];
@@ -39,7 +39,7 @@ const char *devSubTopic[] = {"$sys/151aEKcUs2/test1/thing/property/set",
                                "$sys/151aEKcUs2/test1/thing/property/post/reply"};
 unsigned char *dataPtr = NULL;
 
-/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / ï¿½ï¿½ / ï¿½ï¿½ / ï¿½ï¿½ */
+/* ·çÉÈÈýµ²£º¹Ø / µÍ / ÖÐ / ¸ß */
 static const uint8_t Fan_Levels[4] = {FAN_LEVEL_OFF, FAN_LEVEL_LOW, FAN_LEVEL_MID, FAN_LEVEL_HIGH};
 
 static uint8_t Fan_GetLevel(int16_t duty)
@@ -52,20 +52,20 @@ static uint8_t Fan_GetLevel(int16_t duty)
 
 
 typedef enum{
-	SCREEN_MENU,        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_TEMP_LOW,    //ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_TEMP_HIGH,   //ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_HUM_LOW,     //Êªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_HUM_HIGH,    //Êªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_FAN_SET,     //ï¿½ï¿½ï¿½Èµï¿½Î»ï¿½ï¿½ï¿½ï¿½
-	SCREEN_HEATER,      //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	SCREEN_HUMIDIFIER   //ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	SCREEN_MENU,        //Ö÷½çÃæ
+	SCREEN_TEMP_LOW,    //ÎÂ¶ÈÏÂÏÞÉèÖÃ
+	SCREEN_TEMP_HIGH,   //ÎÂ¶ÈÉÏÏÞÉèÖÃ
+	SCREEN_HUM_LOW,     //Êª¶ÈÏÂÏÞÉèÖÃ
+	SCREEN_HUM_HIGH,    //Êª¶ÈÉÏÏÞÉèÖÃ
+	SCREEN_FAN_SET,     //·çÉÈµ²Î»ÉèÖÃ
+	SCREEN_HEATER,      //¼ÓÈÈÆ÷¿ØÖÆ
+	SCREEN_HUMIDIFIER   //¼ÓÊªÆ÷¿ØÖÆ
 }DisplayState;
 
 DisplayState currentState = SCREEN_MENU;
 
-uint8_t Heater_On = 0, Hum_On = 0;             //ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½KEY2 ï¿½ï¿½ / KEY3 ï¿½Ø£ï¿½
-uint8_t Alarm_On = 0;                          //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ï¿½ï¿½Æ½Ì¨
+uint8_t Heater_On = 0, Hum_On = 0;             //¼ÌµçÆ÷¿ª¹ØÉè¶¨£¨KEY2 ¿ª / KEY3 ¹Ø£©
+uint8_t Alarm_On = 0;                          //·äÃùÆ÷µ±Ç°×´Ì¬£¬ÓÃÓÚÉÏ±¨ÔÆÆ½Ì¨
 
 void Bsp_init()
 {
@@ -84,12 +84,12 @@ void Bsp_init()
 
 void Oled_ShowMenu()
 {
-	OLED_ShowCH(20,0, Work_Mode ? (u8*)"ï¿½Ö¶ï¿½Ä£Ê½" : (u8*)"ï¿½Ô¶ï¿½Ä£Ê½");
-	OLED_ShowCH(20,2,(u8*)"ï¿½ï¿½ï¿½Ü·ï¿½ï¿½ï¿½ï¿½ï¿½");
-	sprintf(oled_Temp,"Temp:%d.%dï¿½ï¿½",DHT11_Data.temp_int,DHT11_Data.temp_deci);
+	OLED_ShowCH(20,0, Work_Mode ? (u8*)"ÊÖ¶¯Ä£Ê½" : (u8*)"×Ô¶¯Ä£Ê½");
+	OLED_ShowCH(20,2,(u8*)"ÖÇÄÜ·õ»¯Ïä");
+	sprintf(oled_Temp,"Temp:%d.%d¡æ",DHT11_Data.temp_int,DHT11_Data.temp_deci);
 	OLED_ShowCH(20,4,(u8*)(char*)oled_Temp);
 
-	sprintf(oled_Hum,"Hum:%dï¿½ï¿½",DHT11_Data.humi_int);
+	sprintf(oled_Hum,"Hum:%d£¥",DHT11_Data.humi_int);
 	OLED_ShowCH(20,6,(u8*)(char*)oled_Hum);
 
 }
@@ -112,18 +112,18 @@ static void Oled_ShowThreshold(const char *title, uint8_t *value)
 	sprintf(buf, "%d", *value);
 	OLED_ShowCH(50,4,(u8*)buf);
 
-	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"ï¿½ï¿½ï¿½ï¿½");   //ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï²ï¿½ï¿½Ü¸ï¿½ï¿½ï¿½Öµ
+	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"Ëø¶¨");   //×Ô¶¯Ä£Ê½£º°å×ÓÉÏ²»ÄÜ¸ÄãÐÖµ
 }
 
 void Oled_ShowFanSet()
 {
 	uint8_t level;
 
-	OLED_ShowCH(30,2,(u8*)"ï¿½ï¿½ï¿½Èµï¿½ï¿½ï¿½");
+	OLED_ShowCH(30,2,(u8*)"·çÉÈµ÷½Ú");
 
 	level = Fan_GetLevel(fan_base);
 
-	if(key_value == 2)			//ï¿½ï¿½ï¿½ï¿½
+	if(key_value == 2)			//Éýµ²
 	{
 		if(level < 3)
 		{
@@ -133,7 +133,7 @@ void Oled_ShowFanSet()
 			PWM_SetSpeed((u8)pwm_duty);
 		}
 	}
-	else if(key_value == 3)		//ï¿½ï¿½ï¿½ï¿½
+	else if(key_value == 3)		//½µµ²
 	{
 		if(level > 0)
 		{
@@ -146,15 +146,15 @@ void Oled_ShowFanSet()
 
 	level = Fan_GetLevel(pwm_duty);
 
-	if(level == 0)				OLED_ShowCH(30,4,(u8*)"ï¿½ï¿½ï¿½ï¿½:ï¿½ï¿½");
-	else if(level == 1)			OLED_ShowCH(30,4,(u8*)"ï¿½ï¿½ï¿½ï¿½:LOW");
-	else if(level == 2)			OLED_ShowCH(30,4,(u8*)"ï¿½ï¿½ï¿½ï¿½:MID");
-	else						OLED_ShowCH(30,4,(u8*)"ï¿½ï¿½ï¿½ï¿½:HIGH");
+	if(level == 0)				OLED_ShowCH(30,4,(u8*)"·çËÙ:¹Ø");
+	else if(level == 1)			OLED_ShowCH(30,4,(u8*)"·çËÙ:LOW");
+	else if(level == 2)			OLED_ShowCH(30,4,(u8*)"·çËÙ:MID");
+	else						OLED_ShowCH(30,4,(u8*)"·çËÙ:HIGH");
 
-	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"ï¿½ï¿½ï¿½ï¿½");   //ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï²ï¿½ï¿½Ü¸Ä·ï¿½ï¿½ï¿½
+	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"Ëø¶¨");   //×Ô¶¯Ä£Ê½£º°å×ÓÉÏ²»ÄÜ¸Ä·çËÙ
 }
 
-/* ï¿½ï¿½ï¿½È¿ï¿½ï¿½Æ£ï¿½ï¿½Ô¶ï¿½Ä£Ê½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½É¢ï¿½È£ï¿½ï¿½Ö¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+/* ·çÉÈ¿ØÖÆ£º×Ô¶¯Ä£Ê½Ö»°´ÉÏÏÞ×Ô¶¯É¢ÈÈ£»ÊÖ¶¯Ä£Ê½°´ÓÃ»§Èýµ²ÉèÖÃ */
 void Fan_Control()
 {
 	uint8_t target;
@@ -176,39 +176,39 @@ void Fan_Control()
 	}
 }
 
-/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½æ£ºKEY2 ï¿½ï¿½ï¿½Ï£ï¿½KEY3 ï¿½Ï¿ï¿½ */
+/* ¼ÓÈÈÆ÷¿ØÖÆ½çÃæ£ºKEY2 ÎüºÏ£¬KEY3 ¶Ï¿ª */
 void Oled_ShowHeater()
 {
 	if(key_value == 2)  { Heater_On = 1; Heater_flag = 0; }
 	if(key_value == 3)  { Heater_On = 0; Heater_flag = 0; }
 
-	OLED_ShowCH(40,2,(u8*)"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
+	OLED_ShowCH(40,2,(u8*)"¼ÓÈÈÆ÷");
 
-	if(Heater_On)     OLED_ShowCH(0,4,(u8*)"×´Ì¬:ï¿½ï¿½");
-	else              OLED_ShowCH(0,4,(u8*)"×´Ì¬:ï¿½ï¿½");
+	if(Heater_On)     OLED_ShowCH(0,4,(u8*)"×´Ì¬:¿ª");
+	else              OLED_ShowCH(0,4,(u8*)"×´Ì¬:¹Ø");
 
-	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"ï¿½ï¿½ï¿½ï¿½");   //ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½
+	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"Ëø¶¨");   //×Ô¶¯Ä£Ê½£º¼ÓÈÈÆ÷ÓÉãÐÖµ¿ØÖÆ£¬²»¿É²Ù×÷
 }
 
-/* ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½æ£ºKEY2 ï¿½ï¿½ï¿½Ï£ï¿½KEY3 ï¿½Ï¿ï¿½ */
+/* ¼ÓÊªÆ÷¿ØÖÆ½çÃæ£ºKEY2 ÎüºÏ£¬KEY3 ¶Ï¿ª */
 void Oled_ShowHumidifier()
 {
 	if(key_value == 2)  { Hum_On = 1; Humidifier_flag = 0; }
 	if(key_value == 3)  { Hum_On = 0; Humidifier_flag = 0; }
 
-	OLED_ShowCH(40,2,(u8*)"ï¿½ï¿½Êªï¿½ï¿½");
+	OLED_ShowCH(40,2,(u8*)"¼ÓÊªÆ÷");
 
-	if(Hum_On)        OLED_ShowCH(0,4,(u8*)"×´Ì¬:ï¿½ï¿½");
-	else              OLED_ShowCH(0,4,(u8*)"×´Ì¬:ï¿½ï¿½");
+	if(Hum_On)        OLED_ShowCH(0,4,(u8*)"×´Ì¬:¿ª");
+	else              OLED_ShowCH(0,4,(u8*)"×´Ì¬:¹Ø");
 
-	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"ï¿½ï¿½ï¿½ï¿½");   //ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½
+	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"Ëø¶¨");   //×Ô¶¯Ä£Ê½£º¼ÓÊªÆ÷ÓÉãÐÖµ¿ØÖÆ£¬²»¿É²Ù×÷
 }
 
 void Oled_Switch()
 {
 	static uint8_t last_mode = 0xFF;
 
-	if(Work_Mode != last_mode)          //Ä£Ê½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	if(Work_Mode != last_mode)          //Ä£Ê½ÇÐ»»£¨ÓÉÐ¡³ÌÐò¿ØÖÆ£©£ºÇåÆÁÖØ»­£¬±ÜÃâ²ÐÁô
 	{
 		last_mode = Work_Mode;
 		OLED_Clear();
@@ -216,7 +216,7 @@ void Oled_Switch()
 
 	key_value = Key_Scan(0);  
 
-	/* ï¿½Ô¶ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÄ°ï¿½ï¿½ï¿½Ö»ï¿½Ü·ï¿½Ò³ï¿½ï¿½KEY2/KEY3 Ò»ï¿½É²ï¿½ï¿½ï¿½Ó¦ */
+	/* ×Ô¶¯Ä£Ê½£º°å×ÓÉÏµÄ°´¼üÖ»ÄÜ·­Ò³£¬KEY2/KEY3 Ò»ÂÉ²»ÏìÓ¦ */
 	if(Work_Mode == 0 && key_value != 1) key_value = 0;
 
 	if(key_value == 1)
@@ -232,17 +232,17 @@ void Oled_Switch()
 		break;
 		
 		case SCREEN_TEMP_LOW:
-			Oled_ShowThreshold("ï¿½Â¶ï¿½LOW", &Temp_Low);
+			Oled_ShowThreshold("ÎÂ¶ÈLOW", &Temp_Low);
 		break;
 		case SCREEN_TEMP_HIGH:
-			Oled_ShowThreshold("ï¿½Â¶ï¿½HIGH", &Temp_High);
+			Oled_ShowThreshold("ÎÂ¶ÈHIGH", &Temp_High);
 		break;
 		case SCREEN_HUM_LOW:
-			Oled_ShowThreshold("Êªï¿½ï¿½LOW", &Hum_Low);
+			Oled_ShowThreshold("Êª¶ÈLOW", &Hum_Low);
 		break;
 		
 		case SCREEN_HUM_HIGH:
-			Oled_ShowThreshold("Êªï¿½ï¿½HIGH", &Hum_High);
+			Oled_ShowThreshold("Êª¶ÈHIGH", &Hum_High);
 		break;
 
 		case SCREEN_FAN_SET:
@@ -275,7 +275,7 @@ void Alarm_State()
 	}
 }
 
-/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½Ô¶ï¿½Ä£Ê½ï¿½Â°ï¿½ï¿½Â¶ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ Heater_On ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½ï¿½ */
+/* ¼ÓÈÈÆ÷¿ØÖÆ£º×Ô¶¯Ä£Ê½ÏÂ°´ÎÂ¶ÈãÐÖµÉèÖÃ Heater_On ±êÖ¾£¬ÔÙÇý¶¯¼ÌµçÆ÷ */
 void Heater_Control()
 {
 	if(Heater_flag)
@@ -284,14 +284,14 @@ void Heater_Control()
 	}
 	else if(Work_Mode == 0)
 	{
-		if(DHT11_Data.temp_int < Temp_Low)    Heater_On = 1;      //ï¿½ï¿½ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½ï¿½
+		if(DHT11_Data.temp_int < Temp_Low)    Heater_On = 1;      //µÍÓÚÎÂ¶ÈÏÂÏÞ£º¼ÓÈÈ
 		else                                  Heater_On = 0;
 	}
 
 	Relay_Temp_Ctrl(Heater_On);
 }
 
-/* ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½Ô¶ï¿½Ä£Ê½ï¿½Â°ï¿½Êªï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ Hum_On ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½ï¿½ */
+/* ¼ÓÊªÆ÷¿ØÖÆ£º×Ô¶¯Ä£Ê½ÏÂ°´Êª¶ÈãÐÖµÉèÖÃ Hum_On ±êÖ¾£¬ÔÙÇý¶¯¼ÌµçÆ÷ */
 void Humidifier_Control()
 {
     if (Humidifier_flag)
@@ -300,7 +300,7 @@ void Humidifier_Control()
 	}
 	else if(Work_Mode == 0)
 	{
-		if(DHT11_Data.humi_int < Hum_Low)    Hum_On = 1;      //ï¿½ï¿½ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½Êª
+		if(DHT11_Data.humi_int < Hum_Low)    Hum_On = 1;      //µÍÓÚÊª¶ÈÏÂÏÞ£º¼ÓÊª
 		else                                 Hum_On = 0;
 	}
 	Relay_Hum_Ctrl(Hum_On);
@@ -344,21 +344,21 @@ int main()
 	static DHT11_Data_TypeDef dht_tmp;
 
 	Bsp_init();
-	OLED_ShowCH(25,4,(u8*)"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½...");
+	OLED_ShowCH(25,4,(u8*)"ÍøÂçÁ¬½ÓÖÐ...");
 	ESP8266_Init();
 	while(OneNet_DevLink())
 	{
 		DelayXms(500);
 	}
 	OLED_Clear();
-	OLED_ShowCH(25,4,(u8*)"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³É¹ï¿½");
+	OLED_ShowCH(25,4,(u8*)"ÍøÂçÁ¬½Ó³É¹¦");
 	DelayXms(3000);
-/*ï¿½ï¿½ï¿½ï¿½Topicï¿½ï¿½ï¿½ï¿½*/
+/*¶©ÔÄTopicÖ÷Ìâ*/
 	OneNet_Subscribe(devSubTopic, 2);	
 	OLED_Clear();
 	while(1)
 	{
-		/* DHT11 ï¿½ï¿½ï¿½Î²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¼ï¿½ï¿½ 1 ï¿½ë£»ï¿½ï¿½Ê§ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ð§Öµ */
+		/* DHT11 Á½´Î²ÉÑùÖÁÉÙ¼ä¸ô 1 Ãë£»¶ÁÊ§°ÜÊ±±£ÁôÉÏÒ»´ÎÓÐÐ§Öµ */
 		if(++dht_cnt >= 80)
 		{
 			dht_cnt = 0;
@@ -372,7 +372,7 @@ int main()
 		Heater_Control();
 		Humidifier_Control();
 
-		/* ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ï¿½ï¿½Õ½ï¿½ï¿½Õ»ï¿½ï¿½ï¿½Ê±Â©ï¿½ï¿½ set */
+		/* ÏÈ´¦ÀíÏÂÐÐ£¬±ÜÃâÖÜÆÚÉÏ±¨Çå¿Õ½ÓÊÕ»º´æÊ±Â©µô set */
 		dataPtr = ESP8266_GetIPD(2);
 		if(dataPtr != NULL)
 			OneNet_RevPro(dataPtr);
