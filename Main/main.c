@@ -20,9 +20,9 @@ char oled_Hum[16];
 uint8_t key_value = 0;
 uint16_t TimeCount = 0;
 
-uint8_t Temp_Low = 30;   //温度下限：低于它启动加热
-uint8_t Temp_High = 33;  //温度上限：高于它启动散热
-uint8_t Hum_Low = 80;    //湿度下限：低于它启动加湿
+uint8_t Temp_Low = 15;   //温度下限：低于它启动加热
+uint8_t Temp_High = 30;  //温度上限：高于它启动散热
+uint8_t Hum_Low = 50;    //湿度下限：低于它启动加湿
 uint8_t Hum_High = 85;   //湿度上限：高于它启动散热
 uint8_t Alarm_flag = 1;   //报警使能：上电默认开启
 uint8_t Humidifier_flag;
@@ -344,6 +344,11 @@ int main()
 	static DHT11_Data_TypeDef dht_tmp;
 
 	Bsp_init();
+	/* 上电自检：响 200ms，证明 PB8->R9->Q1->蜂鸣器/LED1 这一路是好的 */
+	Alarm_ON();
+	DelayXms(200);
+	Alarm_OFF();
+
 	OLED_ShowCH(25,4,(u8*)"网络连接中...");
 	ESP8266_Init();
 	while(OneNet_DevLink())

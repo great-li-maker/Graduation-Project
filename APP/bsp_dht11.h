@@ -19,9 +19,9 @@ typedef struct
 
 /************************** DHT11 连接引脚定义********************************/
 #define      DHT11_Dout_SCK_APBxClock_FUN              RCC_APB2PeriphClockCmd
-#define      DHT11_Dout_GPIO_CLK                       RCC_APB2Periph_GPIOA
+#define      DHT11_Dout_GPIO_CLK                       RCC_APB2Periph_GPIOB
 
-#define      DHT11_Dout_GPIO_PORT                      GPIOA
+#define      DHT11_Dout_GPIO_PORT                      GPIOB
 #define      DHT11_Dout_GPIO_PIN                       GPIO_Pin_11
 
 

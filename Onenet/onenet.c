@@ -317,7 +317,6 @@ void OneNet_RevPro(unsigned char *cmd)
 	cJSON *Temp_json = NULL, *Hum_json = NULL;
 	int bval = 0;
 	double dval = 0.0;
-	uint8_t tmp8 = 0;
 	char idBuf[40];
 	char replyBuf[96];
 
@@ -441,47 +440,39 @@ void OneNet_RevPro(unsigned char *cmd)
 								UsartPrintf(USART_DEBUG, "Fan Speed: %d\r\n", fan_base);
 							}
 
-														/* 温度下限 0~100 */
+														/* 温度下限 0~100：谁后下发谁说了算，上限被带着抬高 */
 							if(OneNet_GetNumber(TempLow_json, 0.0, 100.0, &dval) == 0)
 							{
 								Temp_Low = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Temp Low: %d\r\n", Temp_Low);
+								if(Temp_Low > Temp_High) Temp_High = Temp_Low;
+								UsartPrintf(USART_DEBUG, "Temp Low: %d, High: %d\r\n", Temp_Low, Temp_High);
 							}
 
-							/* 温度上限 0~100 */
+							/* 温度上限 0~100：谁后下发谁说了算，下限被带着压低 */
 							if(OneNet_GetNumber(TempHigh_json, 0.0, 100.0, &dval) == 0)
 							{
 								Temp_High = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Temp High: %d\r\n", Temp_High);
+								if(Temp_High < Temp_Low) Temp_Low = Temp_High;
+								UsartPrintf(USART_DEBUG, "Temp High: %d, Low: %d\r\n", Temp_High, Temp_Low);
 							}
 
-							/* 湿度下限 0~100 */
+							/* 湿度下限 0~100：谁后下发谁说了算，上限被带着抬高 */
 							if(OneNet_GetNumber(HumLow_json, 0.0, 100.0, &dval) == 0)
 							{
 								Hum_Low = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Hum Low: %d\r\n", Hum_Low);
+								if(Hum_Low > Hum_High) Hum_High = Hum_Low;
+								UsartPrintf(USART_DEBUG, "Hum Low: %d, High: %d\r\n", Hum_Low, Hum_High);
 							}
 
-							/* 湿度上限 0~100 */
+							/* 湿度上限 0~100：谁后下发谁说了算，下限被带着压低 */
 							if(OneNet_GetNumber(HumHigh_json, 0.0, 100.0, &dval) == 0)
 							{
 								Hum_High = (uint8_t)(dval + 0.5);
-								UsartPrintf(USART_DEBUG, "Hum High: %d\r\n", Hum_High);
+								if(Hum_High < Hum_Low) Hum_Low = Hum_High;
+								UsartPrintf(USART_DEBUG, "Hum High: %d, Low: %d\r\n", Hum_High, Hum_Low);
 							}
 
-							/* 保证下限不高于上限 */
-							if(Temp_Low > Temp_High)
-							{
-								tmp8 = Temp_Low;
-								Temp_Low = Temp_High;
-								Temp_High = tmp8;
-							}
-							if(Hum_Low > Hum_High)
-							{
-								tmp8 = Hum_Low;
-								Hum_Low = Hum_High;
-								Hum_High = tmp8;
-							}
+							/* 下限不高于上限已在上面的赋值处就地夹紧，这里不再交换 */
 
 						}
 						else

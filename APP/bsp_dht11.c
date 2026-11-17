@@ -18,7 +18,7 @@ void DHT11_Init ( void )
 {
 	DHT11_GPIO_Config (); 
 	
-	DHT11_Dout_1;               // 拉高GPIOB14
+	DHT11_Dout_1;               // 拉高PB11
 }
 
 
