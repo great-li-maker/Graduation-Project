@@ -28,7 +28,9 @@ void PWM_Init(void)
     // PWM1模式
     TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
+    /* Q3 是 NPN 低边开关，PB9 高电平才导通，所以必须用高电平有效；
+     * 原代码写成 Low，导致 0% 档反而输出 100%，档位整个反了 */
+    TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OC4Init(PWM_TIM, &TIM_OCInitStruct);
 
     TIM_Cmd(PWM_TIM, ENABLE);

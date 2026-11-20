@@ -69,9 +69,12 @@ uint8_t Alarm_On = 0;                          //蜂鸣器当前状态，用于上报云平台
 
 void Bsp_init()
 {
+	/* 先把 SysTick 延时配置好，再给 OLED 留出上电复位时间 */
+	Delay_Init();
+	DelayXms(500);	/* SSD1306 冷启动后需要约 100ms 才能接收 I2C 命令，否则开机黑屏，按复位才恢复 */
+
 	DHT11_Init();
 	OLED_Init();
-	Delay_Init();
 	Key_Init();
 	Alarm_Init();
 	LED_Init();
@@ -86,19 +89,19 @@ void Oled_ShowMenu()
 {
 	OLED_ShowCH(20,0, Work_Mode ? (u8*)"手动模式" : (u8*)"自动模式");
 	OLED_ShowCH(20,2,(u8*)"智能孵化箱");
-	sprintf(oled_Temp,"Temp:%d.%d℃",DHT11_Data.temp_int,DHT11_Data.temp_deci);
+	sprintf(oled_Temp,"温度:%d.%d℃",DHT11_Data.temp_int,DHT11_Data.temp_deci);
 	OLED_ShowCH(20,4,(u8*)(char*)oled_Temp);
 
-	sprintf(oled_Hum,"Hum:%d％",DHT11_Data.humi_int);
+	sprintf(oled_Hum,"湿度:%d％",DHT11_Data.humi_int);
 	OLED_ShowCH(20,6,(u8*)(char*)oled_Hum);
 
 }
 
-static void Oled_ShowThreshold(const char *title, uint8_t *value)
+static void Oled_ShowThreshold(const char *title, uint8_t *value, const char *unit)
 {
 	char buf[16];
 
-	OLED_ShowCH(30,2,(u8*)title);
+	OLED_ShowCH(20,2,(u8*)title);
 
 	if(key_value == 2)
 	{
@@ -109,8 +112,8 @@ static void Oled_ShowThreshold(const char *title, uint8_t *value)
 		if(*value > 0) (*value)--;
 	}
 
-	sprintf(buf, "%d", *value);
-	OLED_ShowCH(50,4,(u8*)buf);
+	sprintf(buf, "%d%s", *value, unit);	// 数值后跟单位符号
+	OLED_ShowCH(46,4,(u8*)buf);
 
 	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"锁定");   //自动模式：板子上不能改阈值
 }
@@ -147,9 +150,9 @@ void Oled_ShowFanSet()
 	level = Fan_GetLevel(pwm_duty);
 
 	if(level == 0)				OLED_ShowCH(30,4,(u8*)"风速:关");
-	else if(level == 1)			OLED_ShowCH(30,4,(u8*)"风速:LOW");
-	else if(level == 2)			OLED_ShowCH(30,4,(u8*)"风速:MID");
-	else						OLED_ShowCH(30,4,(u8*)"风速:HIGH");
+	else if(level == 1)			OLED_ShowCH(30,4,(u8*)"风速:低档");
+	else if(level == 2)			OLED_ShowCH(30,4,(u8*)"风速:中档");
+	else						OLED_ShowCH(30,4,(u8*)"风速:高档");
 
 	if(Work_Mode == 0) OLED_ShowCH(0,6,(u8*)"锁定");   //自动模式：板子上不能改风速
 }
@@ -232,17 +235,17 @@ void Oled_Switch()
 		break;
 		
 		case SCREEN_TEMP_LOW:
-			Oled_ShowThreshold("温度LOW", &Temp_Low);
+			Oled_ShowThreshold("温度下限调节", &Temp_Low, "℃");
 		break;
 		case SCREEN_TEMP_HIGH:
-			Oled_ShowThreshold("温度HIGH", &Temp_High);
+			Oled_ShowThreshold("温度上限调节", &Temp_High, "℃");
 		break;
 		case SCREEN_HUM_LOW:
-			Oled_ShowThreshold("湿度LOW", &Hum_Low);
+			Oled_ShowThreshold("湿度下限调节", &Hum_Low, "％");
 		break;
 		
 		case SCREEN_HUM_HIGH:
-			Oled_ShowThreshold("湿度HIGH", &Hum_High);
+			Oled_ShowThreshold("湿度上限调节", &Hum_High, "％");
 		break;
 
 		case SCREEN_FAN_SET:
@@ -371,7 +374,7 @@ int main()
 				DHT11_Data = dht_tmp;
 		}
 
-		Fan_Control();
+		Fan_Control( );
 		Oled_Switch();
 		Alarm_State();
 		Heater_Control();
